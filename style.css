@@ -1,0 +1,150 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+@keyframes wave {
+  0% {
+    transform: translateY(0em);
+  }
+  10% {
+    transform: translateY(-0.2em);
+  }
+  20% {
+    transform: translateY(0.3em);
+  }
+  30% {
+    transform: translateY(0em);
+  }
+  100% {
+    transform: translateY(0em);
+  }
+}
+* {
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  background: #0a0a0a;
+  font-family: "Press Start 2P";
+  font-size: 1vmin;
+  text-rendering: geometricPrecision;
+  margin: 0;
+}
+
+section {
+  position: relative;
+  width: 100vmin;
+  height: 100vmin;
+  overflow: hidden;
+  font-size: 3vmin;
+}
+section::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #141414;
+  width: 100vmin;
+  height: 100vmin;
+}
+
+.player {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 1.5em;
+  height: 3em;
+  background: cyan;
+  transition: all 56ms ease;
+  z-index: 2;
+}
+
+.npc {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 1.5em;
+  height: 3em;
+  z-index: 2;
+}
+.npc::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  content: "";
+  height: 5em;
+  width: 2.8em;
+  z-index: -1;
+  transform: translate(-50%, -50%);
+  background-image: url(assets/whiteflame-animated.png);
+  background-position: center center;
+  background-size: auto 100%;
+  filter: contrast(0.85) saturate(2);
+}
+.npc .bubble {
+  position: absolute;
+  bottom: 100%;
+  left: 100%;
+  width: max-content;
+  border: 5vmin solid white;
+  background: black;
+  background-clip: padding-box;
+  border-image: url(assets/bubble-border.png);
+  border-image-slice: 50;
+  image-rendering: pixelated;
+  color: white;
+  font-size: 16px;
+}
+.npc .bubble .name {
+  font-size: 0.7em;
+}
+.npc .bubble .name::after {
+  content: ":";
+  font-size: 0.7em;
+}
+.npc .bubble .speech {
+  font-style: italic;
+  margin: 1vmin 1vmin 1vmin 3vmin;
+  display: inline-block;
+}
+.npc .bubble .speech > span {
+  display: inline-block;
+  animation: wave 5s infinite;
+}
+.npc .bubble input[type=text] {
+  width: 80%;
+  margin-left: 10%;
+  background: black;
+  border: none;
+  outline: none;
+  border-bottom: 0.5vmin dashed white;
+}
+
+.grass {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 10vmin;
+  height: 10vmin;
+  margin-top: -10vmin;
+}
+.grass:not(:first-of-type) {
+  margin-left: -10vmin;
+}
+.grass[type="0"] {
+  transform: scale(0.6);
+}
+.grass[type="1"] {
+  transform: scale(1);
+}
+.grass[type="2"] {
+  transform: scale(0.9);
+}
+.grass[type="3"] {
+  transform: scale(1.4);
+}

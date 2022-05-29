@@ -67,7 +67,7 @@ let player
 let field
 // --- Runtime variables ---
 let ppos = {x:0, y:0}
-let moving = {left:false, up:false, right:false, down:false, sprint:false}
+let move = {can:true, left:false, up:false, right:false, down:false, sprint:false}
 let npcs = []
 let visited = []
 visited[0] = {x:0,y:0}
@@ -79,34 +79,45 @@ Dolly.interact = function(){
 		this.setSpeech('What...')
 	else if (this.state == 2){
 		this.setSpeech('Who are you?')
-		this.addElement($('<input type="text">'))
+		// this.addElement(
+		// 	$('<input type="text" size="1">')
+		// 		.on('focus', () => {
+		// 			// move.can = false
+		// 			log('Damnit')
+		// 		})
+		// 		.on('blur', () => {
+		// 			// move.can = true
+		// 			log('Damnit')
+		// 		}))
 	}
 }
+Dolly.onGenerate = function() {setTimeout(() => {this.interact()}, 1000)}
 // ----<=>---- NPCs ----<=>----
 $(document).ready(function(){
 	log('Ready')
+	move.can = true
 	UpdateVariables()
 	GenerateGrass()
 	$(window).keydown((e) => {
 		switch (e.which){
 			case 37:
 			case 65:
-				moving.left = true
+				move.left = true
 				break
 			case 39:
 			case 68:
-				moving.right = true
+				move.right = true
 				break
 			case 38:
 			case 87:
-				moving.up = true
+				move.up = true
 				break
 			case 40:
 			case 83:
-				moving.down = true
+				move.down = true
 				break
 			case 16:
-				moving.sprint = true
+				move.sprint = true
 				break
 		}
 		// log(e.which)
@@ -115,46 +126,46 @@ $(document).ready(function(){
 		switch (e.which){
 			case 37:
 			case 65:
-				moving.left = false
+				move.left = false
 				break
 			case 39:
 			case 68:
-				moving.right = false
+				move.right = false
 				break
 			case 38:
 			case 87:
-				moving.up = false
+				move.up = false
 				break
 			case 40:
 			case 83:
-				moving.down = false
+				move.down = false
 				break
 			case 16:
-				moving.sprint = false
+				move.sprint = false
 				break
 			case 69:
 				Interact()
 				break
 		}
 	})
-	setInterval(async function(){
-		if (!document.hasFocus())
-			Object.keys(moving).forEach(k => moving[k] = false)
-		DoMovement()
-		DoBoundaryCheck()
-		if (visited.length == 3 && !$('.npc[data-name=Dolly]')[0]){
-			GenerateNPC('Dolly', 344)
-			setTimeout(() => Dolly.interact(), 1000)
-		}
-	}, 32)
+	setInterval(GameLoop, 32)
 	let grassTest
 	if (testGrass) grassTest = setInterval(() => GenerateGrass(false, 1000*Math.random()), 100)
 })
 
-
-
-
 // --- Game functions ---
+function GameLoop() {
+	if (!document.hasFocus())
+		Object.keys(move).forEach(k => {
+			if (k != 'can')
+				move[k] = false
+		})
+	DoMovement()
+	DoBoundaryCheck()
+	if (visited.length == 3 && !$('.npc[data-name=Dolly]')[0]) {
+		GenerateNPC('Dolly', 344)
+	}
+}
 function UpdateVariables(){
 	$player = $('.player')
 	$field = $('#field')
@@ -162,38 +173,35 @@ function UpdateVariables(){
 	field = $field[0]
 }
 function DoMovement(){
-	if (moving.left)
-		Move('left')
-	if (moving.right)
-		Move('right')
-	if (moving.up)
-		Move('up')
-	if (moving.down)
-		Move('down')
+	if (move.left)		Move('left')
+	if (move.right)	Move('right')
+	if (move.up)		Move('up')
+	if (move.down)		Move('down')
 
 	function Move(dir){
+		if (move.can == false) return
 		let stepsize_vmin = step
 		let stepsize_px = vmin(step)
 		let diagonal_adjust = 0.7
-		if (moving.sprint) stepsize_px *= 1.3
+		if (move.sprint) stepsize_px *= 1.3
 		switch(dir){
 			case 'left':
-				if ((moving.up || moving.down) && !(moving.up && moving.down))
+				if ((move.up || move.down) && !(move.up && move.down))
 					stepsize_vmin *= diagonal_adjust
 				$player.css('left',`calc(50% + ${ppos.x-=stepsize_vmin}vmin)`)
 				break
 			case 'right':
-				if ((moving.up || moving.down) && !(moving.up && moving.down))
+				if ((move.up || move.down) && !(move.up && move.down))
 					stepsize_vmin *= diagonal_adjust
 				$player.css('left',`calc(50% + ${ppos.x+=stepsize_vmin}vmin)`)
 				break
 			case 'up':
-				if ((moving.left || moving.right) && !(moving.left && moving.right))
+				if ((move.left || move.right) && !(move.left && move.right))
 					stepsize_vmin *= diagonal_adjust
 				$player.css('top',`calc(50% + ${ppos.y-=stepsize_vmin}vmin)`)
 				break
 			case 'down':
-				if ((moving.left || moving.right) && !(moving.left && moving.right))
+				if ((move.left || move.right) && !(move.left && move.right))
 					stepsize_vmin *= diagonal_adjust
 				$player.css('top',`calc(50% + ${ppos.y+=stepsize_vmin}vmin)`)
 				break
@@ -201,10 +209,15 @@ function DoMovement(){
 	}
 }
 function DoBoundaryCheck(){
-	if (!((abs(vmin(100) / 2) - abs(vmin(ppos.x)) <= 0
-		|| abs(vmin(100) / 2) - abs(vmin(ppos.y)) <= 0))) return
+	if (!(
+		ppos.y + 100 / 2 <= 0
+		|| ppos.x + 100 / 2 <= 0
+		|| ppos.y >= 100 / 2
+		|| ppos.x >= 100 / 2
+	)) return
 	$('.npc').remove()
 	if (ppos.y + 100 / 2 <= 0) {
+		// log('1 ppos.y + 100 / 2 <= 0')
 		$player.remove()
 		$field.attr('data-y', parseInt($field.attr('data-y')) + 1)
 			.append($('<div class="player">')
@@ -213,6 +226,7 @@ function DoBoundaryCheck(){
 			)
 	}
 	if (ppos.x + 100 / 2 <= 0) {
+		// log('2 ppos.x + 100 / 2 <= 0')
 		$player.remove()
 		$field.attr('data-x', parseInt($field.attr('data-x')) - 1)
 			.append($('<div class="player">')
@@ -221,6 +235,7 @@ function DoBoundaryCheck(){
 			)
 	}
 	if (ppos.y >= 100 / 2) {
+		// log('3 ppos.y >= 100 / 2')
 		$player.remove()
 		$field.attr('data-y', parseInt($field.attr('data-y')) - 1)
 			.append($('<div class="player">')
@@ -229,6 +244,7 @@ function DoBoundaryCheck(){
 			)
 	}
 	if (ppos.x >= 100 / 2) {
+		// log('4 ppos.x >= 100 / 2')
 		$player.remove()
 		$field.attr('data-x', parseInt($field.attr('data-x')) + 1)
 			.append($(`<div class="player">`)
@@ -283,7 +299,6 @@ function GenerateGrass(remove=true, seed_offset=0){
 		grass.attr('type',type)
 		if (type == 3)
 			grass.css('filter',`hue-rotate(${((pos.x*pos.y) % (360-100)) + 100}deg)`)
-		log(pos.x+' '+pos.y)
 		pos.x = (pos.x - 50) * 0.8
 		pos.y = (pos.y - 50) * 0.8
 		grass.css('top', `calc(50% + calc(5vmin + ${pos.x}vmin)`)
@@ -305,7 +320,7 @@ function GenerateNPC(name='NPC', color=160){
 			return
 	})
 	if (!should_npc_be_here) return null
-	log(`Generating NPC: ${name} at ${field.dataset.x},${field.dataset.y}`)
+	//log(`Generating NPC: ${name} at ${field.dataset.x},${field.dataset.y}`)
 	// If NPC has already been generated
 	let npc_already_exists = false
 	npcs.forEach(e => {
@@ -327,6 +342,7 @@ function GenerateNPC(name='NPC', color=160){
 	$(npc.element).css('left', `calc(50% + ${npc.pos.x}vmin)`)
 						.css('top', `calc(50% + ${npc.pos.y}vmin)`)
 	$field.append(npc.element)
+	if (npc.onGenerate) npc.onGenerate()
 	return npc
 }
 // --- Generator functions ---

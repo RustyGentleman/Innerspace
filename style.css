@@ -33,6 +33,9 @@ body {
   text-rendering: geometricPrecision;
   margin: 0;
 }
+body input {
+  font-family: "Press Start 2P";
+}
 
 section {
   position: relative;
@@ -124,6 +127,9 @@ section::before {
   border: none;
   outline: none;
   border-bottom: 0.5vmin dashed white;
+  color: white;
+  text-align: center;
+  font-size: 1em;
 }
 
 .grass {

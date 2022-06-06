@@ -1,15 +1,57 @@
+// --- Imports ---
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap')
+@font-face
+   font-family: 'DePixel Halbfett'
+   src: url('assets/depixelhalbfett.otf')
+@font-face
+   font-family: 'DePixel Klein'
+   src: url('assets/depixelklein.otf')
+@font-face
+   font-family: 'DePixel Illegible'
+   src: url('assets/depixelillegible.otf')
+// --- Animation Keyframes ---
 @keyframes wave
    0%
-      transform: translateY(0em)
+      transform: translateY(0vmin)
    10%
-      transform: translateY(-0.2em)
+      transform: translateY(-0.2vmin)
    20%
-      transform: translateY(0.3em)
+      transform: translateY(0.4vmin)
    30%
-      transform: translateY(0em)
+      transform: translateY(0vmin)
    100%
-      transform: translateY(0em)
+      transform: translateY(0vmin)
+@keyframes fadeIn
+   0%
+      opacity: 0
+   100%
+      opacity: 1
+@keyframes shake
+  0%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  10%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  20%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  30%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  40%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  50%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  60%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  70%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  80%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  90%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+  100%
+     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+// ------------------
+// --- Structural ---
+// ------------------
 *
    box-sizing: border-box
 body
@@ -20,12 +62,10 @@ body
    align-content: center
    justify-content: center
    background: rgb(10 10 10)
-   font-family: 'Press Start 2P'
+   font-family: 'DePixel Klein'
    font-size: 1vmin
    text-rendering: geometricPrecision
    margin: 0
-   input
-      font-family: 'Press Start 2P'
 section
    position: relative
    width: 100vmin
@@ -41,6 +81,36 @@ section
       background: rgb(20 20 20)
       width: 100vmin
       height: 100vmin
+// --------------
+// --- Mixins ---
+// --------------
+@mixin interactable()
+   transition: color 100ms ease, text-shadow 100ms ease
+   font-family: 'DePixel Illegible'
+   cursor: pointer
+   &:not(:focus), &:not(:hover)
+      color: rgb(255 255 255 / 30%)
+   &:focus, &:hover
+      color: white
+   &:hover
+      text-shadow: 0 0 1vmin white
+@mixin center-self()
+   margin-left: 50%
+   transform: translateX(-50%)
+@mixin center-text-inside()
+   width: 100%
+   text-align: center
+// ------------------
+// --- Base stuff ---
+// ------------------
+
+input, button, .dialogue-option, .input-ok
+   @include interactable()
+input[type=text]
+   cursor: initial
+// ----------------
+// --- Elements ---
+// ----------------
 .player
    position: absolute
    left: 50%
@@ -51,6 +121,14 @@ section
    background: cyan
    transition: all 56ms ease
    z-index: 2
+   &.moving-left:not(.moving-right)
+      transform: translate(-50%, -50%) matrix(1, 0, -0.1, 1, 6, 2)
+   &.moving-right:not(.moving-left)
+      transform: translate(-50%, -50%) matrix(1, 0, 0.1, 1, -6, 2)
+   &.moving-up:not(.moving-down)
+      height: 2.7em
+   &.moving-down:not(.moving-up)
+      height: 3.3em
 .npc
    position: absolute
    left: 50%
@@ -72,41 +150,82 @@ section
       background-position: center center
       background-size: auto 100%
       filter: contrast(0.85) saturate(2)
-   .bubble
-      position: absolute
+.bubble
+   position: absolute
+   width: max-content
+   height: max-content
+   max-width: 50vmin
+   max-height: 50vmin
+   border: 5vmin solid white
+   background: black
+   background-clip: padding-box
+   border-image-slice: 8
+   image-rendering: pixelated
+   color: white
+   font-size: max(2.5vmin, 10px)
+   &.to-right
+      border-image: url(assets/bubble-border.png)
+      border-image-slice: 8
       bottom: 100%
       left: 100%
-      width: max-content
-      border: 5vmin solid white
-      background: black
-      background-clip: padding-box
-      border-image: url(assets/bubble-border.png)
-      border-image-slice: 50
-      image-rendering: pixelated
-      color: white
-      font-size: 16px
-      .name
+   &.to-left
+      border-image: url(assets/bubble-border-toleft.png)
+      border-image-slice: 8
+      bottom: 100%
+      right: 100%
+   .name
+      font-family: 'DePixel Halbfett'
+      font-size: 0.7em
+      &::after
+         content: ':'
          font-size: 0.7em
-         &::after
-            content: ':'
-            font-size: 0.7em
-      .speech
-         font-style: italic
-         margin: 1vmin 1vmin 1vmin 3vmin
-         display: inline-block
-         > span
-            display: inline-block
-            animation: wave 5s infinite
-      input[type=text]
-         width: 80%
-         margin-left: 10%
-         background: black
-         border: none
-         outline: none
-         border-bottom: .5vmin dashed white
-         color: white
-         text-align: center
-         font-size: 1em
+   .visitor
+      font-family: 'DePixel Halbfett'
+      font-size: 0.8em
+      color: cyan
+      text-shadow: 0 0 7px cyan
+   .speech
+      font-style: italic
+      margin: 1vmin 1vmin 1vmin 1vmin
+      display: inline-block
+   .wavy
+      opacity: 0
+      display: inline-block
+      animation: wave 5s infinite, fadeIn 100ms forwards
+   .shaky > *
+      animation: wave 5s infinite, shake 1s linear infinite forwards, fadeIn 100ms forwards
+   .wordspan
+      display: inline-block
+   .dialogue-option
+      display: block
+      &::before
+         content: ' - '
+      &:hover::before
+         content: ' >> '
+   .input-ok
+      @include center-self()
+      display: inline-block
+      color: white
+      font-family: 'DePixel Illegible'
+   input[type=text]
+      width: 80%
+      margin-left: 10%
+      background: black
+      border: none
+      outline: none
+      border-bottom: .5vmin dashed white
+      text-align: center
+      font-size: 1em
+   button
+      font-size: 0.8em
+      color: white
+      background: black
+      border: 1.1vmin solid white
+      border-image: url('assets/border-squarish.png')
+      border-image-slice: 2
+      image-rendering: pixelated
+      margin: 1vmin 0 -1vmin 50%
+      transform: translateX(-50%)
 .grass
    position: absolute
    transform: translate(-50%, -50%)

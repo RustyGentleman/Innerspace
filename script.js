@@ -1,15 +1,51 @@
-// --- Pretty console logs ---
-const logcss = `font-family: Hack, monospace;text-shadow: 0 0 10px black, 0 0 10px black;background: linear-gradient(to right, #4d94ff 0%, #4d94ff 8px, rgb(77 148 255 / 30%) 8px, transparent 50px);color: #4d94ff;padding: 2px 0 2px 30px;`
-const warncss = `font-family: Hack, monospace;text-shadow: 0 0 10px black, 0 0 10px black;background: linear-gradient(to right, #ffa621 0%, #ffa621 0% 8px, rgb(255 166 33 / 30%) 8px, transparent 50px);color: #ffa621;padding: 2px 0 2px 30px;`
-const log = (e) => console.log('%c'+e, logcss)
-const warn = (e) => console.log('%c'+e, warncss)
-// --- Just some useful shorthands, idk ---
+// -------------------------------------------- //
+// ?---------------- Preamble ----------------- //
+// -------------------------------------------- //
+// ?----------- Pretty console logs ----------- //
+const logcss = `font-family: 'JetBrains Mono', monospace;text-shadow: 0 0 10px black, 0 0 10px black;background: linear-gradient(to right, #4d94ff 0%, #4d94ff 8px, rgb(77 148 255 / 30%) 8px, transparent 50px);color: #4d94ff;padding: 2px 0 2px 30px;`
+const warncss = `font-family: 'JetBrains Mono', monospace;text-shadow: 0 0 10px black, 0 0 10px black;background: linear-gradient(to right, #ffa621 0%, #ffa621 0% 8px, rgb(255 166 33 / 30%) 8px, transparent 50px);color: #ffa621;padding: 2px 0 2px 30px;`
+const log = (e) => {
+	if (typeof(e) == 'object')
+		console.log(e)
+	else
+		console.log('%c'+e, logcss)
+}
+const warn = (e) => {
+	if (typeof(e) == 'object')
+		console.log(e)
+	else
+		console.log('%c'+e, warncss)
+}
+
+// -------------------------------------------- //
+// -------------------------------------------- //
+// ?--------- Variables and Constants --------- //
+// -------------------------------------------- //
+// ?---- Just some useful shorthands, idk ----- //
 const abs = Math.abs
+const save = (property, value) => localStorage.setItem(`Emptiness.${property}`, value)
+const get = (property) => localStorage.getItem(`Emptiness.${property}`)
 const testGrass = false
-// --- Important variables ---
+
+// ?----------- Important variables ----------- //
 const step = 4
-const bubble_fadetime = 300
-// --- Classes/Objects ---
+const delay_bubblefade = 300
+const delay_options = 700
+const text_reveal = false
+// ?--------- Quick-access variables ---------- //
+let $player = $('.player')
+let $field = $('#field')
+let player
+let field
+
+// ?------------ Runtime variables ------------ //
+let ppos = {x:0, y:0}
+let move = {can:true, left:false, up:false, right:false, down:false, sprint:false}
+let npcs = []
+let visited = []
+visited[0] = {x:0,y:0}
+
+// ?------------- Classes/Objects ------------- //
 function NPC(name='NPC', color, interactable=true){
 	this.name = name
 	this.color = color
@@ -17,87 +53,293 @@ function NPC(name='NPC', color, interactable=true){
 	this.has_bubble = false
 	this.coord
 	this.pos
-	this.state = 0
+	this.states = {}
+	this.interactions = {}
+	this.block_interaction = false
 	this.element.attr('data-name', name)
 	this.element.css('filter', `hue-rotate(${color}deg)`)
+	this.save = () => save(this.name, JSON.stringify(Dolly))
 	this.bubble = function(){
 		if (!this.has_bubble){
-			$(this.element).append($('<div class="bubble">'))
+			let boob = $('<div>')
+				.addClass('bubble')
+				.css('filter', `hue-rotate(${360-color}deg)`)
+			$(this.element).append(boob)
+			if ((this.element[0].getBoundingClientRect().x - window.innerWidth/2) <= 0)
+				boob.addClass('to-right')
+			else boob.addClass('to-left')
 			this.has_bubble = true
 		}
 		return $(this.element[0].querySelector('.bubble'))
 	}
-	this.removeBubble = function(){
-		$(this.element[0].querySelector('.bubble')).fadeOut(bubble_fadetime)
+	this.bubble_remove = function(){
+		$(this.element[0].querySelector('.bubble')).fadeOut(delay_bubblefade)
 		this.element[0].innerHTML = ''
 		this.has_bubble = false
 	}
-	this.addSpeech = function(text){
-		let spans = []
-		for (i=0; i<text.length; i++)
-			spans[i] = $(`<span style="animation-delay:${i}00ms">${(text[i] == ' ') ? '\xa0' : text[i]}</span>`)[0]
-
-		this.bubble()
-				.append(
-					$('<span class="speech">')
-						.append(spans)
-				)
-				.append($('<br>'))
-	}
-	this.setSpeech = function(text){
-		this.removeBubble()
+	this.bubble_reset = function(){
+		this.bubble_remove()
 		this.bubble()
 			.append(
-				$('<span class="name">')
+				$(`<span class="name" style="color:hsl(${color}, 100%, 50%">`)
 					.text(this.name)
 			)
 			.append($('<br>'))
-		this.addSpeech(text)
-		this.bubble().fadeOut(0).fadeIn(bubble_fadetime)
+			.fadeOut(0).fadeIn(delay_bubblefade)
 		return this
 	}
-	this.addElement = function(element){
+	this.add_speech = function(text, newline=true){
+		if (newline){
+			let speech = $('<span class="speech">')
+				.append(text_wavify(text_encode(text)))
+			this.bubble().append(speech)
+				speech.append($('<br>'))
+			return speech
+		}else{
+			$(this.element[0].querySelectorAll('.speech')).last().append(text_wavify(text_encode(text)))
+			return $(this.element[0].querySelectorAll('.speech'))
+		}
+	}
+	this.set_speech = function(text, newline=true){
+		this.bubble_remove()
+		this.bubble()
+			.append(
+				$(`<span class="name" style="color:hsl(${color}, 100%, 50%">`)
+					.text(this.name)
+			)
+			.append($('<br>'))
+		if (newline)
+			this.add_speech(text)
+		else{
+			this.add_speech('')[0].innerHTML = ''
+			this.add_speech(text, newline)
+		}
+		this.bubble().fadeOut(0).fadeIn(delay_bubblefade)
+		return this
+	}
+	this.add_element = function(element){
 		this.bubble().append(element)
+		return this
+	}
+	this.add_dialogueOption = async function(text, callback=null){
+		await new Promise(r => setTimeout(r, delay_options))
+		let option = $(`<span class="dialogue-option">${text}</span>`)
+			.fadeOut(0)
+		this.bubble().append(option)
+		option.click(callback)
+			.fadeIn(delay_options)
+		return option
+	}
+
+	function text_wavify(text){
+		let spans = []
+		let delay = 0
+		for (i = 0; i < text.length; i++) {
+			// Deal with encoded text
+			if (text[i] == '<'){
+				let encoded_class = text.substr(i).match(/class="([^"]*)"/)[1]
+				// Eat the encoded part of the string
+				do i++; while (text[i-1] != '>' && i < text.length)
+				let span_encoded = $(`<span class="${encoded_class}">`)
+				for (i; text[i] != '<' && i < text.length; i++)
+					span_encoded.append(
+						$(`<span style="animation-delay:${delay++}00ms">${(text[i] == ' ') ? '\xa0' : text[i]}</span>`)
+							.addClass('wavy')[0]
+					)
+				spans.push(span_encoded[0])
+				// Eat the encoded part of the string
+				do i++; while (text[i-1] != '>' && i < text.length)
+			}
+			//
+			spans.push(
+				$(`<span style="animation-delay:${delay++}00ms">${(text[i] == ' ') ? '\xa0' : text[i]}</span>`)
+					.addClass('wavy')[0]
+			)
+		}
+		// Split words into inline-block spans
+		let final = []
+		let n = 0
+		final[n] = $('<span class="wordspan">')[0]
+		spans.forEach((s) => {
+			if (s.innerHTML != '&nbsp;')
+				final[n].append(s)
+			else{
+				final[n].append(s)
+				final[++n] = $('<span class="wordspan">')[0]
+			}
+		})
+		log(final)
+		//
+		return final
+	}
+	function text_encode(text){
+		for (i=0; i<text.length; i++){
+			if (text[i] == '@') 
+				log(text = text.replace('@', '<span class="visitor">').replace('@', '</span>'))
+			if (text[i] == '#') 
+				log(text = text.replace('#', '<span class="shaky">').replace('#', '</span>'))
+		}
+		// let span = $('<span>').html(text)
+		return text
 	}
 }
-// --- Quick-access variables ---
-let $player = $('.player')
-let $field = $('#field')
-let player
-let field
-// --- Runtime variables ---
-let ppos = {x:0, y:0}
-let move = {can:true, left:false, up:false, right:false, down:false, sprint:false}
-let npcs = []
-let visited = []
-visited[0] = {x:0,y:0}
-// --- NPCs ---
-const Dolly = new NPC('Dolly', 344, true)
-Dolly.interact = function(){
-	this.state++
-	if (this.state == 1)
-		this.setSpeech('What...')
-	else if (this.state == 2){
-		this.setSpeech('Who are you?')
-		// this.addElement(
-		// 	$('<input type="text" size="1">')
-		// 		.on('focus', () => {
-		// 			// move.can = false
-		// 			log('Damnit')
-		// 		})
-		// 		.on('blur', () => {
-		// 			// move.can = true
-		// 			log('Damnit')
-		// 		}))
-	}
-}
+
+
+// -------------------------------------------- //
+// -------------------------------------------- //
+// ?------------- The Juicy Stuff ------------- //
+// -------------------------------------------- //
+// ?------------------ NPCs ------------------- //
+const Dolly = new NPC('Dolly', 355, true)
+Dolly.states.introduction = 0
+Dolly.kamaoji = {}
+Dolly.kamaoji.joy = '„• ᵕ •„'
+Dolly.kamaoji.smug = '„˘ ᵕ ˘„'
 Dolly.onGenerate = function() {setTimeout(() => {this.interact()}, 1000)}
-// ----<=>---- NPCs ----<=>----
+Dolly.interact = async function(add=true){
+	if (this.block_interaction == true) return
+	if (this.states.introduction >= 0){
+		if (add) Dolly.states.introduction++
+		// What...
+		if (Dolly.states.introduction == 1) this.set_speech('What...')
+		// Who are you?
+		//? Input
+		else if (Dolly.states.introduction == 2){
+			this.block_interaction = true
+			this.set_speech('Who are you?')
+			let in_ok = $('<div><span class="input-ok"> >> </span></div>')
+			let in_name = $('<input type="text" size="1" placeholder="---">')
+				.fadeOut(0)
+			in_name.on('focus', () => move.can = false)
+				.on('blur', () => move.can = true)
+				.on('input', () => {
+					if (in_name[0].value.length >= 3 && !in_name[0].nextElementSibling){
+						this.add_element(in_ok)
+						in_ok.on('click', () => {
+							save('visitor', in_name[0].value)
+							this.block_interaction = false
+							this.interact()
+						})
+					}
+					else if (in_name[0].value.length < 3) in_ok.remove()
+				})
+			await new Promise(r => setTimeout(r, 1600))
+			this.add_element(in_name.fadeIn(delay_bubblefade))
+		}
+		// Ahh... Greetings, @user@...
+		else if (Dolly.states.introduction == 3) this.set_speech(`Ahh... Greetings, @${get('visitor')}@...`)
+		// ...But...
+		else if (Dolly.states.introduction == 4) this.set_speech('...But...')
+		// ...You weren't supposed to be here.
+		//? Dialogue
+		else if (Dolly.states.introduction == 5){
+			this.block_interaction = true
+			this.set_speech('...You weren\'t supposed to be here...')
+			await new Promise(r => setTimeout(r, 3700))
+			await this.add_dialogueOption('Oh, I\'m sorry...', function(){
+				Dolly.states.introduction = 6
+				Dolly.block_interaction = false
+				Dolly.interact(false)
+			})
+			await this.add_dialogueOption('Why?', function(){
+				Dolly.states.introduction = 13
+				Dolly.block_interaction = false
+				Dolly.interact(false)
+			})
+		}
+		//* A
+		// Oh, no, it's fine!
+		else if (Dolly.states.introduction == 6) this.set_speech('Oh, no, it\'s fine!')
+		// If you're here, I'd imagine he allowed you in... || right?
+		//? Dialogue
+		else if (Dolly.states.introduction == 7){
+			this.block_interaction = true
+			this.set_speech('If you\'re here, I\'d imagine he allowed you in', false)
+			await new Promise(r => setTimeout(r, 4500))
+			await new Promise(r => setTimeout(r, delay_options))
+			this.add_speech('.', false)
+			await new Promise(r => setTimeout(r, delay_options))
+			this.add_speech('.', false)
+			await new Promise(r => setTimeout(r, delay_options))
+			this.add_speech('.', false)
+			await new Promise(r => setTimeout(r, delay_options))
+			this.add_speech(' right?', false)
+			await this.add_dialogueOption('He did, yes!', function(){
+				Dolly.states.introduction = 12
+				Dolly.block_interaction = false
+				Dolly.interact(false)
+			})
+			await this.add_dialogueOption('I think he did...', function(){
+				Dolly.states.introduction = 12
+				Dolly.block_interaction = false
+				Dolly.interact(false)
+			})
+			await this.add_dialogueOption('Not really...', function(){
+				Dolly.states.introduction = 8
+				Dolly.block_interaction = false
+				Dolly.interact(false)
+			})
+			this.block_interaction = false
+		}
+		//* A-1-N
+		// Oh...
+		else if (Dolly.states.introduction == 8) this.set_speech('Oh...')
+		// ...Then...
+		else if (Dolly.states.introduction == 9) this.set_speech('...Then...')
+		// ...
+		else if (Dolly.states.introduction == 10) this.set_speech('...')
+		// ...Will you please leave? --- 11
+		//? Dialogue
+		else if (Dolly.states.introduction == 11){
+			this.set_speech('...Will you please leave?')
+			await new Promise(r => setTimeout(r, 2500))
+			await this.add_dialogueOption('Yes', fuck_it_up)
+			await this.add_dialogueOption('Yes', fuck_it_up)
+		}
+		//* A-1-Y
+		// kamaoji.joy --- 12
+		else if (Dolly.states.introduction == 12){
+			this.bubble_reset()
+			this.add_element($(`<span>${this.kamaoji.joy}</span>`))
+		}
+		//* -
+		// Well, you see...
+		else if (Dolly.states.introduction == 13) this.set_speech('Well, you see...')
+		// This is a special place in his mind.
+		else if (Dolly.states.introduction == 14) this.set_speech('This is a special place in his mind.')
+		// It may look a bit empty, but that's because...
+		else if (Dolly.states.introduction == 15) this.set_speech('It may look a bit empty, but that\'s because...')
+		// Well, everything is well hidden.
+		else if (Dolly.states.introduction == 16) this.set_speech('Well, everything is well hidden.')
+		//* A
+		// He does tend to be quite careful with how he opens up to people
+		else if (Dolly.states.introduction == 17) this.set_speech('He does tend to be quite careful with how he opens up to people')
+		// Despite his yearning to belong and be understood...
+		else if (Dolly.states.introduction == 18) this.set_speech('Despite his yearning to belong and be understood...')
+		// ... --- 19
+		else if (Dolly.states.introduction == 19) this.set_speech('...')
+		// Oh, but, by all means, do feel free to look around! || kamaoji.joy --- 20 || 21
+		else if (Dolly.states.introduction == 20) this.set_speech('Oh, but, by all means, do feel free to look around!')
+		else if (Dolly.states.introduction == 21){
+			this.bubble_reset()
+			this.add_element($(`<span>${this.kamaoji.joy}</span>`))
+		}
+		//* -
+		// I'm sure you'll come across something, in time
+		else if (Dolly.states.introduction == 22) this.set_speech('I\'m sure you\'ll come across something, in time')
+		// ...Just try to be tidy, will you?
+		else if (Dolly.states.introduction == 23) this.set_speech('...Just try to be tidy, will you?')
+		// Maintaining this place is #more work than it might seem#...
+		else if (Dolly.states.introduction == 24) this.set_speech('Maintaining this place is #more work than it might seem#...')
+	}
+}
+
+// ?-------------- Runtime code --------------- //
 $(document).ready(function(){
 	log('Ready')
 	move.can = true
 	UpdateVariables()
-	GenerateGrass()
+	generate_grass()
 	$(window).keydown((e) => {
 		switch (e.which){
 			case 37:
@@ -150,10 +392,10 @@ $(document).ready(function(){
 	})
 	setInterval(GameLoop, 32)
 	let grassTest
-	if (testGrass) grassTest = setInterval(() => GenerateGrass(false, 1000*Math.random()), 100)
+	if (testGrass) grassTest = setInterval(() => generate_grass(false, 1000*Math.random()), 100)
 })
 
-// --- Game functions ---
+// ?------------- Game functions -------------- //
 function GameLoop() {
 	if (!document.hasFocus())
 		Object.keys(move).forEach(k => {
@@ -162,8 +404,8 @@ function GameLoop() {
 		})
 	DoMovement()
 	DoBoundaryCheck()
-	if (visited.length == 3 && !$('.npc[data-name=Dolly]')[0]) {
-		GenerateNPC('Dolly', 344)
+	if (visited.length == 1 && !$('.npc[data-name=Dolly]')[0]) {
+		generate_npc('Dolly', 344)
 	}
 }
 function UpdateVariables(){
@@ -174,12 +416,17 @@ function UpdateVariables(){
 }
 function DoMovement(){
 	if (move.left)		Move('left')
+	else $player.removeClass('moving-left')
 	if (move.right)	Move('right')
+	else $player.removeClass('moving-right')
 	if (move.up)		Move('up')
+	else $player.removeClass('moving-up')
 	if (move.down)		Move('down')
+	else $player.removeClass('moving-down')
 
 	function Move(dir){
 		if (move.can == false) return
+		$player.addClass(`moving-${dir}`)
 		let stepsize_vmin = step
 		let stepsize_px = vmin(step)
 		let diagonal_adjust = 0.7
@@ -253,7 +500,7 @@ function DoBoundaryCheck(){
 			)
 	}
 	UpdateVariables()
-	GenerateGrass()
+	generate_grass()
 	AddToVisitedTiles()
 	PopulateNPCs()
 
@@ -271,29 +518,37 @@ function DoBoundaryCheck(){
 			if (e.coord.x == parseInt(field.dataset.x)
 				&& e.coord.y == parseInt(field.dataset.y)
 				){
-				GenerateNPC(e.name, e.color)
+				generate_npc(e.name, e.color)
 			}
 		})
 	}
 }
 function Interact(){
-	log('Interacting...')
+	if (move.can == false) return
+	// log('Interacting...')
+	let min = Infinity
+	let closest
 	Array.from(document.querySelectorAll('[data-interactable]')).forEach(e => {
 		let npc
 		npcs.forEach(n => {
 			if (n.name == e.dataset.name) npc = n
 		})
 		if (distance_between(ppos.x, ppos.y, npc.pos.x, npc.pos.y) <= 20)
-			npc.interact()
+			if (distance_between(ppos.x, ppos.y, npc.pos.x, npc.pos.y) < min){
+				closest = npc
+				min = distance_between(ppos.x, ppos.y, npc.pos.x, npc.pos.y)
+			}
 	})
+	closest.interact()
 }
-// --- Graphic functions ---
-function GenerateGrass(remove=true, seed_offset=0){
+
+// ?------------ Graphic functions ------------ //
+function generate_grass(remove=true, seed_offset=0){
 	if (remove) $('.grass').remove()
-	let quantity = 10 + (ChaosHash(field.dataset.x, field.dataset.y, 21+seed_offset).x % 6 - 2)
+	let quantity = 10 + (chaos_hash(field.dataset.x, field.dataset.y, 22+seed_offset).x % 6 - 2)
 	//log(`Generating ${quantity} grass`)
 	for (i=0; i<quantity; i++){
-		let pos = RandFromPos(field.dataset.x, field.dataset.y, 17+i+seed_offset)
+		let pos = random_from_pos(field.dataset.x, field.dataset.y, 11+i+seed_offset)
 		let grass = $('<img class="grass">')
 		let type = parseInt((pos.x + pos.y) % 4)
 		grass.attr('type',type)
@@ -307,7 +562,7 @@ function GenerateGrass(remove=true, seed_offset=0){
 		$field.append(grass)
 	}
 }
-function GenerateNPC(name='NPC', color=160){
+function generate_npc(name='NPC', color=160){
 	// If NPC is already on screen
 	if ($(`.npc[data-name="${name}"]`)[0]) return null
 	// If NPC has already been generated, but does not belong here
@@ -337,7 +592,7 @@ function GenerateNPC(name='NPC', color=160){
 	else npc = new NPC(name, color)
 	npcs[npcs.length] = npc
 	npc.coord = {x:parseInt(field.dataset.x),y:parseInt(field.dataset.y)}
-	let ch = ChaosHash(color*32, color*color+15, 57)
+	let ch = chaos_hash(color*32, color*color+15, 57)
 	npc.pos = {x:(ch.x%80)-40,y:(ch.y%80)-40}
 	$(npc.element).css('left', `calc(50% + ${npc.pos.x}vmin)`)
 						.css('top', `calc(50% + ${npc.pos.y}vmin)`)
@@ -345,8 +600,9 @@ function GenerateNPC(name='NPC', color=160){
 	if (npc.onGenerate) npc.onGenerate()
 	return npc
 }
-// --- Generator functions ---
-function ChaosHash(inx, iny, offset=0){
+
+// ?----------- Generator functions ----------- //
+function chaos_hash(inx, iny, offset=0){
 	let seed = 3332 + offset
 	let outx = seed + inx * 374761393
 	let outy = seed + iny * 668265263
@@ -354,11 +610,12 @@ function ChaosHash(inx, iny, offset=0){
 	outy = (outy^(outy >> 29)) * 1274126177
 	return {x:outx^(outx >> 7), y:outy^(outy >> 11)}
 }
-function RandFromPos(x, y, off){
-	let out = ChaosHash(x, y, off)
+function random_from_pos(x, y, off){
+	let out = chaos_hash(x, y, off)
 	return {x:parseInt(out.x % 100), y:parseInt(out.y % 100)}
 }
-// --- Assistive functions ---
+
+// ?----------- Assistive functions ----------- //
 function vh(v) {
 	return (v * (Math.max(document.documentElement.clientHeight, window.innerHeight || 0))) / 100
 }
@@ -369,3 +626,4 @@ function vmin(v) {return Math.min(vh(v), vw(v));}
 function distance_between(x1, y1, x2, y2){
 	return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2))
 }
+// -------------------------------------------- //

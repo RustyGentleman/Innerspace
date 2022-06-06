@@ -1,19 +1,134 @@
 @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
-@keyframes wave {
+@font-face {
+  font-family: "DePixel Halbfett";
+  src: url("assets/depixelhalbfett.otf");
+}
+@font-face {
+  font-family: "DePixel Klein";
+  src: url("assets/depixelklein.otf");
+}
+@font-face {
+  font-family: "DePixel Illegible";
+  src: url("assets/depixelillegible.otf");
+}
+@-webkit-keyframes wave {
   0% {
-    transform: translateY(0em);
+    transform: translateY(0vmin);
   }
   10% {
-    transform: translateY(-0.2em);
+    transform: translateY(-0.2vmin);
   }
   20% {
-    transform: translateY(0.3em);
+    transform: translateY(0.4vmin);
   }
   30% {
-    transform: translateY(0em);
+    transform: translateY(0vmin);
   }
   100% {
-    transform: translateY(0em);
+    transform: translateY(0vmin);
+  }
+}
+@keyframes wave {
+  0% {
+    transform: translateY(0vmin);
+  }
+  10% {
+    transform: translateY(-0.2vmin);
+  }
+  20% {
+    transform: translateY(0.4vmin);
+  }
+  30% {
+    transform: translateY(0vmin);
+  }
+  100% {
+    transform: translateY(0vmin);
+  }
+}
+@-webkit-keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@-webkit-keyframes shake {
+  0% {
+    transform: translate(-0.011747189vmin, -0.0746234253vmin);
+  }
+  10% {
+    transform: translate(-0.0727479351vmin, 0.0155140535vmin);
+  }
+  20% {
+    transform: translate(0.0140701327vmin, -0.0727122989vmin);
+  }
+  30% {
+    transform: translate(-0.0739040478vmin, 0.0883212077vmin);
+  }
+  40% {
+    transform: translate(-0.0651214603vmin, -0.0864902782vmin);
+  }
+  50% {
+    transform: translate(0.0946793501vmin, 0.072970133vmin);
+  }
+  60% {
+    transform: translate(-0.0597293355vmin, -0.0751834168vmin);
+  }
+  70% {
+    transform: translate(0.0501444798vmin, 0.0432621576vmin);
+  }
+  80% {
+    transform: translate(0.0026926745vmin, 0.0629547332vmin);
+  }
+  90% {
+    transform: translate(0.0443392257vmin, -0.0498183451vmin);
+  }
+  100% {
+    transform: translate(-0.0681757256vmin, -0.0308820679vmin);
+  }
+}
+@keyframes shake {
+  0% {
+    transform: translate(-0.011747189vmin, -0.0746234253vmin);
+  }
+  10% {
+    transform: translate(-0.0727479351vmin, 0.0155140535vmin);
+  }
+  20% {
+    transform: translate(0.0140701327vmin, -0.0727122989vmin);
+  }
+  30% {
+    transform: translate(-0.0739040478vmin, 0.0883212077vmin);
+  }
+  40% {
+    transform: translate(-0.0651214603vmin, -0.0864902782vmin);
+  }
+  50% {
+    transform: translate(0.0946793501vmin, 0.072970133vmin);
+  }
+  60% {
+    transform: translate(-0.0597293355vmin, -0.0751834168vmin);
+  }
+  70% {
+    transform: translate(0.0501444798vmin, 0.0432621576vmin);
+  }
+  80% {
+    transform: translate(0.0026926745vmin, 0.0629547332vmin);
+  }
+  90% {
+    transform: translate(0.0443392257vmin, -0.0498183451vmin);
+  }
+  100% {
+    transform: translate(-0.0681757256vmin, -0.0308820679vmin);
   }
 }
 * {
@@ -28,13 +143,10 @@ body {
   align-content: center;
   justify-content: center;
   background: #0a0a0a;
-  font-family: "Press Start 2P";
+  font-family: "DePixel Klein";
   font-size: 1vmin;
   text-rendering: geometricPrecision;
   margin: 0;
-}
-body input {
-  font-family: "Press Start 2P";
 }
 
 section {
@@ -55,6 +167,25 @@ section::before {
   height: 100vmin;
 }
 
+input, button, .dialogue-option, .input-ok {
+  transition: color 100ms ease, text-shadow 100ms ease;
+  font-family: "DePixel Illegible";
+  cursor: pointer;
+}
+input:not(:focus), input:not(:hover), button:not(:focus), button:not(:hover), .dialogue-option:not(:focus), .dialogue-option:not(:hover), .input-ok:not(:focus), .input-ok:not(:hover) {
+  color: rgba(255, 255, 255, 0.3);
+}
+input:focus, input:hover, button:focus, button:hover, .dialogue-option:focus, .dialogue-option:hover, .input-ok:focus, .input-ok:hover {
+  color: white;
+}
+input:hover, button:hover, .dialogue-option:hover, .input-ok:hover {
+  text-shadow: 0 0 1vmin white;
+}
+
+input[type=text] {
+  cursor: initial;
+}
+
 .player {
   position: absolute;
   left: 50%;
@@ -65,6 +196,18 @@ section::before {
   background: cyan;
   transition: all 56ms ease;
   z-index: 2;
+}
+.player.moving-left:not(.moving-right) {
+  transform: translate(-50%, -50%) matrix(1, 0, -0.1, 1, 6, 2);
+}
+.player.moving-right:not(.moving-left) {
+  transform: translate(-50%, -50%) matrix(1, 0, 0.1, 1, -6, 2);
+}
+.player.moving-up:not(.moving-down) {
+  height: 2.7em;
+}
+.player.moving-down:not(.moving-up) {
+  height: 3.3em;
 }
 
 .npc {
@@ -90,46 +233,112 @@ section::before {
   background-size: auto 100%;
   filter: contrast(0.85) saturate(2);
 }
-.npc .bubble {
+
+.bubble {
   position: absolute;
-  bottom: 100%;
-  left: 100%;
+  width: -webkit-max-content;
+  width: -moz-max-content;
   width: max-content;
+  height: -webkit-max-content;
+  height: -moz-max-content;
+  height: max-content;
+  max-width: 50vmin;
+  max-height: 50vmin;
   border: 5vmin solid white;
   background: black;
   background-clip: padding-box;
-  border-image: url(assets/bubble-border.png);
-  border-image-slice: 50;
-  image-rendering: pixelated;
+  border-image-slice: 8;
+  -ms-interpolation-mode: nearest-neighbor;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: pixelated;
   color: white;
-  font-size: 16px;
+  font-size: max(2.5vmin, 10px);
 }
-.npc .bubble .name {
+.bubble.to-right {
+  -o-border-image: url(assets/bubble-border.png);
+     border-image: url(assets/bubble-border.png);
+  border-image-slice: 8;
+  bottom: 100%;
+  left: 100%;
+}
+.bubble.to-left {
+  -o-border-image: url(assets/bubble-border-toleft.png);
+     border-image: url(assets/bubble-border-toleft.png);
+  border-image-slice: 8;
+  bottom: 100%;
+  right: 100%;
+}
+.bubble .name {
+  font-family: "DePixel Halbfett";
   font-size: 0.7em;
 }
-.npc .bubble .name::after {
+.bubble .name::after {
   content: ":";
   font-size: 0.7em;
 }
-.npc .bubble .speech {
+.bubble .visitor {
+  font-family: "DePixel Halbfett";
+  font-size: 0.8em;
+  color: cyan;
+  text-shadow: 0 0 7px cyan;
+}
+.bubble .speech {
   font-style: italic;
-  margin: 1vmin 1vmin 1vmin 3vmin;
+  margin: 1vmin 1vmin 1vmin 1vmin;
   display: inline-block;
 }
-.npc .bubble .speech > span {
+.bubble .wavy {
+  opacity: 0;
   display: inline-block;
-  animation: wave 5s infinite;
+  -webkit-animation: wave 5s infinite, fadeIn 100ms forwards;
+          animation: wave 5s infinite, fadeIn 100ms forwards;
 }
-.npc .bubble input[type=text] {
+.bubble .shaky > * {
+  -webkit-animation: wave 5s infinite, shake 1s linear infinite forwards, fadeIn 100ms forwards;
+          animation: wave 5s infinite, shake 1s linear infinite forwards, fadeIn 100ms forwards;
+}
+.bubble .wordspan {
+  display: inline-block;
+}
+.bubble .dialogue-option {
+  display: block;
+}
+.bubble .dialogue-option::before {
+  content: " - ";
+}
+.bubble .dialogue-option:hover::before {
+  content: " >> ";
+}
+.bubble .input-ok {
+  margin-left: 50%;
+  transform: translateX(-50%);
+  display: inline-block;
+  color: white;
+  font-family: "DePixel Illegible";
+}
+.bubble input[type=text] {
   width: 80%;
   margin-left: 10%;
   background: black;
   border: none;
   outline: none;
   border-bottom: 0.5vmin dashed white;
-  color: white;
   text-align: center;
   font-size: 1em;
+}
+.bubble button {
+  font-size: 0.8em;
+  color: white;
+  background: black;
+  border: 1.1vmin solid white;
+  -o-border-image: url("assets/border-squarish.png");
+     border-image: url("assets/border-squarish.png");
+  border-image-slice: 2;
+  -ms-interpolation-mode: nearest-neighbor;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: pixelated;
+  margin: 1vmin 0 -1vmin 50%;
+  transform: translateX(-50%);
 }
 
 .grass {
@@ -154,3 +363,4 @@ section::before {
 .grass[type="3"] {
   transform: scale(1.4);
 }
+/*# sourceMappingURL=style.css.map */

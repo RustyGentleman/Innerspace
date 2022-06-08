@@ -58,7 +58,7 @@ function NPC(name='NPC', color, interactable=true){
 	this.block_interaction = false
 	this.element.attr('data-name', name)
 	this.element.css('filter', `hue-rotate(${color}deg)`)
-	this.save = () => save(this.name, JSON.stringify(Dolly))
+	this.save = () => save(this.name, JSON.stringify(this))
 	this.bubble = function(){
 		if (!this.has_bubble){
 			let boob = $('<div>')
@@ -183,6 +183,78 @@ function NPC(name='NPC', color, interactable=true){
 		return text
 	}
 }
+function NPC_refactored(name='NPC', color=0, interactable=true){
+	this.name = name
+	this.color = color
+	this.location
+	this.pos
+	this.stage
+	this.states = []
+	this.can_interact = interactable
+	this.element = (interactable)
+		? $(`<div class="npc" style="filter:hue-rotate(${360-color}deg)" data-name="${this.name}" data-interactable>`)
+		: $(`<div class="npc" style="filter:hue-rotate(${360-color}deg)" data-name="${this.name}">`)
+	this.bubble
+
+	this.save = () => save(this.name, JSON.stringify(this))
+	this.create_bubble = async (fadeIn=true) => {
+		this.bubble = $(`<div class="bubble" style="filter:hue-rotate(${360-color}deg)>`)
+			.fadeOut(0)
+		$(this.element).append(bubble)
+		if ((this.element[0].getBoundingClientRect().x - window.innerWidth/2) <= 0)
+			this.bubble.addClass('to-right')
+		else
+			this.bubble.addClass('to-left')
+		if (fadeIn)
+			this.bubble.fadeIn(delay_bubblefade)
+		else
+			this.bubble.fadeIn(0)
+	}
+	this.clear_bubble = async (fadeOut=false) => {
+		if (fadeOut){
+			this.bubble.fadeOut(delay_bubblefade)
+			await new Promise((r) => setTimeout(r, delay_bubblefade))
+		}
+		this.bubble.remove()
+		this.bubble = undefined
+		return this
+	}
+	this.reset_bubble = async (fadeIn=true, fadeOut=false) => {
+		await this.clear_bubble(fadeOut)
+		await this.create_bubble(fadeIn)
+		return this
+	}
+	this.speech_set = async (text='', wavy=true, fadeIn=true) => {
+		let speech = $('<span class="speech">')
+		if (wavy)
+			speech.addClass('wavy')
+		if (fadeIn)
+			speech.addClass('fade-in')
+		if (wavy || fadeIn){
+			for (i=0; i<text.length; i++){
+				speech.apppend($(`<span style="--order:${i}">${text[i]}</span`))
+			}
+		}
+		else
+			speech.text(text)
+		return this
+	}
+	this.speech_add = async(text='', newline=true, wavy=true, fadeIn=true) => {
+		let speech
+		if (newline == false 
+			&& !this.bubble.querySelector('.speech'))
+			speech = $(this.bubble.querySelector('.speech')).last()
+		speech = $(this.bubble.querySelector('.speech')).last()
+		if (wavy || fadeIn){
+			for (i=0; i<text.length; i++){
+				speech.apppend($(`<span class="${(wavy)?'wavy':''} ${(fadeIn)?'fade-in':''}" style="--order:${i}">${text[i]}</span`))
+			}
+		}
+		else
+			speech.text(text)
+		return this
+	}
+}
 
 
 // -------------------------------------------- //
@@ -190,7 +262,7 @@ function NPC(name='NPC', color, interactable=true){
 // ?------------- The Juicy Stuff ------------- //
 // -------------------------------------------- //
 // ?------------------ NPCs ------------------- //
-const Dolly = new NPC('Dolly', 355, true)
+const Dolly = new NPC_refactored('Dolly', 355, true)
 Dolly.states.introduction = 0
 Dolly.kamaoji = {}
 Dolly.kamaoji.joy = '„• ᵕ •„'

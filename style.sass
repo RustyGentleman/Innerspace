@@ -189,9 +189,13 @@ input[type=text]
       margin: 1vmin 1vmin 1vmin 1vmin
       display: inline-block
    .wavy
-      opacity: 0
       display: inline-block
-      animation: wave 5s infinite, fadeIn 100ms forwards
+      animation: wave 5s infinite calc(var(--order) * 100ms)
+   .fade-in
+      opacity: 0
+      animation: fadeIn 100ms forwards calc(var(--order) * 100ms)
+   .wavy.fade-in
+      animation: wave 5s infinite calc(var(--order) * 100ms), fadeIn 100ms calc(var(--order) * 100ms) forwards
    .shaky > *
       animation: wave 5s infinite, shake 1s linear infinite forwards, fadeIn 100ms forwards
    .wordspan

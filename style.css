@@ -63,72 +63,72 @@
 }
 @-webkit-keyframes shake {
   0% {
-    transform: translate(-0.011747189vmin, -0.0746234253vmin);
+    transform: translate(-0.0455769108vmin, -0.0857100541vmin);
   }
   10% {
-    transform: translate(-0.0727479351vmin, 0.0155140535vmin);
+    transform: translate(0.0172351064vmin, -0.0668690758vmin);
   }
   20% {
-    transform: translate(0.0140701327vmin, -0.0727122989vmin);
+    transform: translate(0.0946625536vmin, -0.0732716574vmin);
   }
   30% {
-    transform: translate(-0.0739040478vmin, 0.0883212077vmin);
+    transform: translate(0.0983244455vmin, 0.0771443901vmin);
   }
   40% {
-    transform: translate(-0.0651214603vmin, -0.0864902782vmin);
+    transform: translate(0.0846749055vmin, -0.0632670609vmin);
   }
   50% {
-    transform: translate(0.0946793501vmin, 0.072970133vmin);
+    transform: translate(-0.0197393978vmin, -0.0589881541vmin);
   }
   60% {
-    transform: translate(-0.0597293355vmin, -0.0751834168vmin);
+    transform: translate(0.0671380646vmin, -0.0244283156vmin);
   }
   70% {
-    transform: translate(0.0501444798vmin, 0.0432621576vmin);
+    transform: translate(-0.0376937473vmin, 0.0479137795vmin);
   }
   80% {
-    transform: translate(0.0026926745vmin, 0.0629547332vmin);
+    transform: translate(0.0249488456vmin, -0.0828756519vmin);
   }
   90% {
-    transform: translate(0.0443392257vmin, -0.0498183451vmin);
+    transform: translate(-0.0396916442vmin, -0.0254111283vmin);
   }
   100% {
-    transform: translate(-0.0681757256vmin, -0.0308820679vmin);
+    transform: translate(-0.041681496vmin, -0.0306411671vmin);
   }
 }
 @keyframes shake {
   0% {
-    transform: translate(-0.011747189vmin, -0.0746234253vmin);
+    transform: translate(-0.0455769108vmin, -0.0857100541vmin);
   }
   10% {
-    transform: translate(-0.0727479351vmin, 0.0155140535vmin);
+    transform: translate(0.0172351064vmin, -0.0668690758vmin);
   }
   20% {
-    transform: translate(0.0140701327vmin, -0.0727122989vmin);
+    transform: translate(0.0946625536vmin, -0.0732716574vmin);
   }
   30% {
-    transform: translate(-0.0739040478vmin, 0.0883212077vmin);
+    transform: translate(0.0983244455vmin, 0.0771443901vmin);
   }
   40% {
-    transform: translate(-0.0651214603vmin, -0.0864902782vmin);
+    transform: translate(0.0846749055vmin, -0.0632670609vmin);
   }
   50% {
-    transform: translate(0.0946793501vmin, 0.072970133vmin);
+    transform: translate(-0.0197393978vmin, -0.0589881541vmin);
   }
   60% {
-    transform: translate(-0.0597293355vmin, -0.0751834168vmin);
+    transform: translate(0.0671380646vmin, -0.0244283156vmin);
   }
   70% {
-    transform: translate(0.0501444798vmin, 0.0432621576vmin);
+    transform: translate(-0.0376937473vmin, 0.0479137795vmin);
   }
   80% {
-    transform: translate(0.0026926745vmin, 0.0629547332vmin);
+    transform: translate(0.0249488456vmin, -0.0828756519vmin);
   }
   90% {
-    transform: translate(0.0443392257vmin, -0.0498183451vmin);
+    transform: translate(-0.0396916442vmin, -0.0254111283vmin);
   }
   100% {
-    transform: translate(-0.0681757256vmin, -0.0308820679vmin);
+    transform: translate(-0.041681496vmin, -0.0306411671vmin);
   }
 }
 * {
@@ -288,10 +288,18 @@ input[type=text] {
   display: inline-block;
 }
 .bubble .wavy {
-  opacity: 0;
   display: inline-block;
-  -webkit-animation: wave 5s infinite, fadeIn 100ms forwards;
-          animation: wave 5s infinite, fadeIn 100ms forwards;
+  -webkit-animation: wave 5s infinite calc(var(--order) * 100ms);
+          animation: wave 5s infinite calc(var(--order) * 100ms);
+}
+.bubble .fade-in {
+  opacity: 0;
+  -webkit-animation: fadeIn 100ms forwards calc(var(--order) * 100ms);
+          animation: fadeIn 100ms forwards calc(var(--order) * 100ms);
+}
+.bubble .wavy.fade-in {
+  -webkit-animation: wave 5s infinite calc(var(--order) * 100ms), fadeIn 100ms calc(var(--order) * 100ms) forwards;
+          animation: wave 5s infinite calc(var(--order) * 100ms), fadeIn 100ms calc(var(--order) * 100ms) forwards;
 }
 .bubble .shaky > * {
   -webkit-animation: wave 5s infinite, shake 1s linear infinite forwards, fadeIn 100ms forwards;

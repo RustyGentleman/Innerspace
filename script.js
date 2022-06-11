@@ -30,7 +30,7 @@ const testGrass = false
 // ?----------- Important variables ----------- //
 const step = 4
 const delay_bubblefade = 300
-const delay_options = 700
+const delay_bubble_elements = 700
 const text_reveal = false
 // ?--------- Quick-access variables ---------- //
 let $player = $('.player')
@@ -122,12 +122,12 @@ function NPC(name='NPC', color, interactable=true){
 		return this
 	}
 	this.add_dialogueOption = async function(text, callback=null){
-		await new Promise(r => setTimeout(r, delay_options))
+		await new Promise(r => setTimeout(r, delay_bubble_elements))
 		let option = $(`<span class="dialogue-option">${text}</span>`)
 			.fadeOut(0)
 		this.bubble().append(option)
 		option.click(callback)
-			.fadeIn(delay_options)
+			.fadeIn(delay_bubble_elements)
 		return option
 	}
 
@@ -188,29 +188,51 @@ function NPC_refactored(name='NPC', color=0, interactable=true){
 	this.color = color
 	this.location
 	this.pos
-	this.stage
-	this.states = []
+	this.current_stage
+	this.stages = {}
 	this.can_interact = interactable
 	this.element = (interactable)
 		? $(`<div class="npc" style="filter:hue-rotate(${360-color}deg)" data-name="${this.name}" data-interactable>`)
 		: $(`<div class="npc" style="filter:hue-rotate(${360-color}deg)" data-name="${this.name}">`)
 	this.bubble
 
-	this.save = () => save(this.name, JSON.stringify(this))
-	this.create_bubble = async (fadeIn=true) => {
-		this.bubble = $(`<div class="bubble" style="filter:hue-rotate(${360-color}deg)>`)
+	this.sv = () =>
+		save(this.name, JSON.stringify(this))
+	/* this.interaction_add = (stage, interaction) => {
+		if (!this.interactions[stage])
+			this.interactions[stage] = {}
+		this.interactions[stage][interaction.id]
+		interaction.npc = this
+		} */
+	this.block_interaction = (block) => {
+		this.can_interact = block
+		if (block) {
+			this.can_interact = !block
+			this.element.removeAttr('data-interactable')
+		}
+		else {
+			this.can_interact = !block
+			this.element.attr('data-interactable', '')
+		}
+		}
+	this.bubble_create = async (fadeIn=true) => {
+		let bubble = $(`<div class="bubble" style="filter:hue-rotate(${360-color}deg)">`)
 			.fadeOut(0)
 		$(this.element).append(bubble)
 		if ((this.element[0].getBoundingClientRect().x - window.innerWidth/2) <= 0)
-			this.bubble.addClass('to-right')
+			bubble.addClass('to-right')
 		else
-			this.bubble.addClass('to-left')
-		if (fadeIn)
-			this.bubble.fadeIn(delay_bubblefade)
+			bubble.addClass('to-left')
+		if (fadeIn) {
+			bubble.fadeIn(delay_bubblefade)
+			// await new Promise(r => setTimeout(r, delay_bubblefade))
+		}
 		else
-			this.bubble.fadeIn(0)
-	}
-	this.clear_bubble = async (fadeOut=false) => {
+			bubble.fadeIn(0)
+		this.bubble = bubble
+		return this
+		}
+	this.bubble_clear = async (fadeOut=true) => {
 		if (fadeOut){
 			this.bubble.fadeOut(delay_bubblefade)
 			await new Promise((r) => setTimeout(r, delay_bubblefade))
@@ -218,43 +240,145 @@ function NPC_refactored(name='NPC', color=0, interactable=true){
 		this.bubble.remove()
 		this.bubble = undefined
 		return this
-	}
-	this.reset_bubble = async (fadeIn=true, fadeOut=false) => {
-		await this.clear_bubble(fadeOut)
-		await this.create_bubble(fadeIn)
-		return this
-	}
-	this.speech_set = async (text='', wavy=true, fadeIn=true) => {
-		let speech = $('<span class="speech">')
-		if (wavy)
-			speech.addClass('wavy')
-		if (fadeIn)
-			speech.addClass('fade-in')
-		if (wavy || fadeIn){
-			for (i=0; i<text.length; i++){
-				speech.apppend($(`<span style="--order:${i}">${text[i]}</span`))
-			}
 		}
-		else
-			speech.text(text)
+	this.bubble_reset = async (fadeIn=true, fadeOut=true) => {
+		if (this.bubble)
+			await this.bubble_clear(fadeIn)
+		await this.bubble_create(fadeOut)
 		return this
-	}
-	this.speech_add = async(text='', newline=true, wavy=true, fadeIn=true) => {
+		}
+	this.speech_add = async (text='', newline=true, wavy=true, fadeIn=true) => {
+		text = text_encode(text)
 		let speech
-		if (newline == false 
-			&& !this.bubble.querySelector('.speech'))
-			speech = $(this.bubble.querySelector('.speech')).last()
-		speech = $(this.bubble.querySelector('.speech')).last()
-		if (wavy || fadeIn){
+		// If needed, create bubble
+		if (!this.bubble)
+			await this.bubble_create()
+		// If not in a new line, look for the last .speech element to append text to
+		if (!newline) {
+			// If there is no .speech element, create an empty one
+			if (!this.bubble[0].querySelector('.speech')){
+				await this.speech_add('')
+				speech = $(this.bubble[0].querySelector('.speech'))
+			}
+			// Else, use the last one found
+			else {
+				speech = $(this.bubble[0].querySelectorAll('.speech')).last()
+			}
+		}
+		// If in a new line
+		else
+			speech = $('<span class="speech">')
+
+
+		// If text is to be animated, separate it into individual characters
+		if (wavy || fadeIn) {
+			let lettercount = 0
+			let wordspan = $('<span class="wordspan"></span>')[0]
+			speech.append(wordspan)
 			for (i=0; i<text.length; i++){
-				speech.apppend($(`<span class="${(wavy)?'wavy':''} ${(fadeIn)?'fade-in':''}" style="--order:${i}">${text[i]}</span`))
+				// Deal with encoded text
+				if (text[i] == '<'){
+					let encoded_class = text.substring(i).match(/class="([^"]*)"/)[1]
+					// Eat the encoded part of the string
+					do i++; while (text[i-1] != '>' && i < text.length)
+					for (i; text[i] != '<' && i < text.length; i++) {
+						if (text[i] != ' ')
+							wordspan.appendChild($(`<span class="${encoded_class} ${(wavy)?'wavy':''} ${(fadeIn)?'fade-in':''}" style="--order:${lettercount++}">${text[i]}</span>`)[0])
+						else{
+							speech.append($(`<span class="${(wavy)?'wavy':''} ${(fadeIn)?'fade-in':''}" style="--order:${lettercount++}">`).html('&nbsp;'))
+							wordspan = $('<span class="wordspan"></span>')[0]
+							speech.append(wordspan)
+						}
+					}
+					// Eat the encoded part of the string
+					do i++; while (text[i-1] != '>' && i < text.length)
+				}
+				if (text[i] != ' ') {
+					wordspan.appendChild($(`<span class="${(wavy)?'wavy':''} ${(fadeIn)?'fade-in':''}" style="--order:${lettercount++}">${text[i]}</span>`)[0])
+				}
+				else{
+					speech.append($(`<span class="${(wavy)?'wavy':''} ${(fadeIn)?'fade-in':''}" style="--order:${lettercount++}">`).html('&nbsp;'))
+					wordspan = $('<span class="wordspan"></span>')[0]
+					speech.append(wordspan)
+				}
 			}
 		}
 		else
-			speech.text(text)
+			speech.append($('<span>').text(text))
+		if (newline) {
+			if (this.bubble[0].querySelector('.speech'))
+				this.bubble.append($('<br>'))
+			this.bubble.append(speech)
+		}
+		if (fadeIn)
+			await new Promise((r) => setTimeout(r, text.length * 100))
 		return this
+		}
+	this.speech_set = async (text, wavy=true, fadeIn=true) => {
+		text = text_encode(text)
+		await this.bubble_reset()
+		
+		await this.speech_add(text, false, wavy, fadeIn)
+		// let speech = $('<span class="speech">')
+		// if (wavy || fadeIn){
+		// 	for (i=0; i<text.length; i++)
+		// 		speech.append($(`<span class="${(wavy)?'wavy':''} ${(fadeIn)?'fade-in':''}" style="--order:${i}">`).html((text[i] == ' ') ? '&nbsp;' : text[i]))
+		// }
+		// else
+		// 	speech.text(text)
+		// this.bubble.append(speech)
+		// if (fadeIn)
+		// 	await new Promise((r) => setTimeout(r, text.length * 100))
+		return this
+		}
+	this.add_custom_element = async (element, fadeIn=true) => {
+		$(element).fadeOut(0)
+		this.bubble.append(element)
+		if (fadeIn) {
+			$(element).fadeIn(delay_bubble_elements)
+			await new Promise(r => setTimeout(r, delay_bubble_elements))
+		}
+		return this
+		}
+	this.dialogue_option_add = async (text, callback, fadeIn=true) => {
+		text = text_encode(text)
+		let option = $(`<span class="dialogue-option">${text}</span>`)
+		.fadeOut(0)
+			.on('click', callback)
+			this.bubble.append(option)
+		if (fadeIn)
+			option.fadeIn(delay_bubble_elements)
+		else
+			option.fadeIn(0)
+		if (fadeIn) await new Promise(r => setTimeout(r, delay_bubble_elements))
+		return this
+	}
+
+	function text_encode(text) {
+		for (i=0; i<text.length; i++){
+			if (text[i] == '@') 
+				text = text.replace('@', '<span class="visitor">').replace('@', '</span>')
+			if (text[i] == '#') 
+				text = text.replace('#', '<span class="shaky">').replace('#', '</span>')
+		}
+		// let span = $('<span>').html(text)
+		return text
 	}
 }
+/* function Interaction(id, speeches, custom_elements, order){
+	this.id = id
+	this.npc
+	this.speeches = []
+	this.custom_elements = []
+	this.order = []
+	this.next_interaction_id
+
+	this.display = () => {
+		for (item in order){
+			
+		}
+	}
+	} */
 
 
 // -------------------------------------------- //
@@ -262,152 +386,242 @@ function NPC_refactored(name='NPC', color=0, interactable=true){
 // ?------------- The Juicy Stuff ------------- //
 // -------------------------------------------- //
 // ?------------------ NPCs ------------------- //
-const Dolly = new NPC_refactored('Dolly', 355, true)
-Dolly.states.introduction = 0
-Dolly.kamaoji = {}
-Dolly.kamaoji.joy = '„• ᵕ •„'
-Dolly.kamaoji.smug = '„˘ ᵕ ˘„'
-Dolly.onGenerate = function() {setTimeout(() => {this.interact()}, 1000)}
-Dolly.interact = async function(add=true){
-	if (this.block_interaction == true) return
-	if (this.states.introduction >= 0){
-		if (add) Dolly.states.introduction++
-		// What...
-		if (Dolly.states.introduction == 1) this.set_speech('What...')
-		// Who are you?
-		//? Input
-		else if (Dolly.states.introduction == 2){
-			this.block_interaction = true
-			this.set_speech('Who are you?')
-			let in_ok = $('<div><span class="input-ok"> >> </span></div>')
-			let in_name = $('<input type="text" size="1" placeholder="---">')
-				.fadeOut(0)
-			in_name.on('focus', () => move.can = false)
-				.on('blur', () => move.can = true)
-				.on('input', () => {
-					if (in_name[0].value.length >= 3 && !in_name[0].nextElementSibling){
-						this.add_element(in_ok)
-						in_ok.on('click', () => {
-							save('visitor', in_name[0].value)
-							this.block_interaction = false
-							this.interact()
-						})
-					}
-					else if (in_name[0].value.length < 3) in_ok.remove()
+{
+	const Dolly = new NPC('Dolly', 355, true)
+	Dolly.states.introduction = 0
+	Dolly.kamaoji = {}
+	Dolly.kamaoji.joy = '„• ᵕ •„'
+	Dolly.kamaoji.smug = '„˘ ᵕ ˘„'
+	Dolly.onGenerate = function() {setTimeout(() => {this.interact()}, 1000)}
+	Dolly.interact = async function(add=true){
+		if (this.block_interaction == true) return
+		if (this.states.introduction >= 0){
+			if (add) Dolly.states.introduction++
+			// What...
+			if (Dolly.states.introduction == 1) this.set_speech('What...')
+			// Who are you?
+			//? Input
+			else if (Dolly.states.introduction == 2){
+				this.block_interaction = true
+				this.set_speech('Who are you?')
+				let in_ok = $('<div><span class="input-ok"> >> </span></div>')
+				let in_name = $('<input type="text" size="1" placeholder="---">')
+					.fadeOut(0)
+				in_name.on('focus', () => move.can = false)
+					.on('blur', () => move.can = true)
+					.on('input', () => {
+						if (in_name[0].value.length >= 3 && !in_name[0].nextElementSibling){
+							this.add_element(in_ok)
+							in_ok.on('click', () => {
+								save('visitor', in_name[0].value)
+								this.block_interaction = false
+								this.interact()
+							})
+						}
+						else if (in_name[0].value.length < 3) in_ok.remove()
+					})
+				await new Promise(r => setTimeout(r, 1600))
+				this.add_element(in_name.fadeIn(delay_bubblefade))
+			}
+			// Ahh... Greetings, @user@...
+			else if (Dolly.states.introduction == 3) this.set_speech(`Ahh... Greetings, @${get('visitor')}@...`)
+			// ...But...
+			else if (Dolly.states.introduction == 4) this.set_speech('...But...')
+			// ...You weren't supposed to be here.
+			//? Dialogue
+			else if (Dolly.states.introduction == 5){
+				this.block_interaction = true
+				this.set_speech('...You weren\'t supposed to be here...')
+				await new Promise(r => setTimeout(r, 3700))
+				await this.add_dialogueOption('Oh, I\'m sorry...', function(){
+					Dolly.states.introduction = 6
+					Dolly.block_interaction = false
+					Dolly.interact(false)
 				})
-			await new Promise(r => setTimeout(r, 1600))
-			this.add_element(in_name.fadeIn(delay_bubblefade))
+				await this.add_dialogueOption('Why?', function(){
+					Dolly.states.introduction = 13
+					Dolly.block_interaction = false
+					Dolly.interact(false)
+				})
+			}
+			//* A
+			// Oh, no, it's fine!
+			else if (Dolly.states.introduction == 6) this.set_speech('Oh, no, it\'s fine!')
+			// If you're here, I'd imagine he allowed you in... || right?
+			//? Dialogue
+			else if (Dolly.states.introduction == 7){
+				this.block_interaction = true
+				this.set_speech('If you\'re here, I\'d imagine he allowed you in', false)
+				await new Promise(r => setTimeout(r, 4500))
+				await new Promise(r => setTimeout(r, delay_bubble_elements))
+				this.add_speech('.', false)
+				await new Promise(r => setTimeout(r, delay_bubble_elements))
+				this.add_speech('.', false)
+				await new Promise(r => setTimeout(r, delay_bubble_elements))
+				this.add_speech('.', false)
+				await new Promise(r => setTimeout(r, delay_bubble_elements))
+				this.add_speech(' right?', false)
+				await this.add_dialogueOption('He did, yes!', function(){
+					Dolly.states.introduction = 12
+					Dolly.block_interaction = false
+					Dolly.interact(false)
+				})
+				await this.add_dialogueOption('I think he did...', function(){
+					Dolly.states.introduction = 12
+					Dolly.block_interaction = false
+					Dolly.interact(false)
+				})
+				await this.add_dialogueOption('Not really...', function(){
+					Dolly.states.introduction = 8
+					Dolly.block_interaction = false
+					Dolly.interact(false)
+				})
+				this.block_interaction = false
+			}
+			//* A-1-N
+			// Oh...
+			else if (Dolly.states.introduction == 8) this.set_speech('Oh...')
+			// ...Then...
+			else if (Dolly.states.introduction == 9) this.set_speech('...Then...')
+			// ...
+			else if (Dolly.states.introduction == 10) this.set_speech('...')
+			// ...Will you please leave? --- 11
+			//? Dialogue
+			else if (Dolly.states.introduction == 11){
+				this.set_speech('...Will you please leave?')
+				await new Promise(r => setTimeout(r, 2500))
+				await this.add_dialogueOption('Yes', fuck_it_up)
+				await this.add_dialogueOption('Yes', fuck_it_up)
+			}
+			//* A-1-Y
+			// kamaoji.joy --- 12
+			else if (Dolly.states.introduction == 12){
+				this.bubble_reset()
+				this.add_element($(`<span>${this.kamaoji.joy}</span>`))
+			}
+			//* -
+			// Well, you see...
+			else if (Dolly.states.introduction == 13) this.set_speech('Well, you see...')
+			// This is a special place in his mind.
+			else if (Dolly.states.introduction == 14) this.set_speech('This is a special place in his mind.')
+			// It may look a bit empty, but that's because...
+			else if (Dolly.states.introduction == 15) this.set_speech('It may look a bit empty, but that\'s because...')
+			// Well, everything is well hidden.
+			else if (Dolly.states.introduction == 16) this.set_speech('Well, everything is well hidden.')
+			//* A
+			// He does tend to be quite careful with how he opens up to people
+			else if (Dolly.states.introduction == 17) this.set_speech('He does tend to be quite careful with how he opens up to people')
+			// Despite his yearning to belong and be understood...
+			else if (Dolly.states.introduction == 18) this.set_speech('Despite his yearning to belong and be understood...')
+			// ... --- 19
+			else if (Dolly.states.introduction == 19) this.set_speech('...')
+			// Oh, but, by all means, do feel free to look around! || kamaoji.joy --- 20 || 21
+			else if (Dolly.states.introduction == 20) this.set_speech('Oh, but, by all means, do feel free to look around!')
+			else if (Dolly.states.introduction == 21){
+				this.bubble_reset()
+				this.add_element($(`<span>${this.kamaoji.joy}</span>`))
+			}
+			//* -
+			// I'm sure you'll come across something, in time
+			else if (Dolly.states.introduction == 22) this.set_speech('I\'m sure you\'ll come across something, in time')
+			// ...Just try to be tidy, will you?
+			else if (Dolly.states.introduction == 23) this.set_speech('...Just try to be tidy, will you?')
+			// Maintaining this place is #more work than it might seem#...
+			else if (Dolly.states.introduction == 24) this.set_speech('Maintaining this place is #more work than it might seem#...')
 		}
-		// Ahh... Greetings, @user@...
-		else if (Dolly.states.introduction == 3) this.set_speech(`Ahh... Greetings, @${get('visitor')}@...`)
-		// ...But...
-		else if (Dolly.states.introduction == 4) this.set_speech('...But...')
-		// ...You weren't supposed to be here.
-		//? Dialogue
-		else if (Dolly.states.introduction == 5){
-			this.block_interaction = true
-			this.set_speech('...You weren\'t supposed to be here...')
-			await new Promise(r => setTimeout(r, 3700))
-			await this.add_dialogueOption('Oh, I\'m sorry...', function(){
-				Dolly.states.introduction = 6
-				Dolly.block_interaction = false
-				Dolly.interact(false)
-			})
-			await this.add_dialogueOption('Why?', function(){
-				Dolly.states.introduction = 13
-				Dolly.block_interaction = false
-				Dolly.interact(false)
-			})
+	}
+}
+const Dolly = new NPC_refactored('Dolly', 355, true)
+Dolly.current_stage = 'introduction'
+Dolly.stages['introduction'] = -1
+Dolly.kamaoji = {
+	joy:	'„• ᵕ •„',
+	smug:	'„˘ ᵕ ˘„',
+	sus:	'눈 _ 눈',
+}
+Dolly.onGenerate = () => {setTimeout(() => {Dolly.interact(true, true)}, 1000)}
+Dolly.interact = async (advance_stage=true, ignore_blocking=false) => {
+	log('Dolly.interact')
+	if (!Dolly.can_interact && !ignore_blocking)
+		return
+	if (advance_stage)
+		Dolly.stages[Dolly.current_stage]++
+	if (Dolly.current_stage == 'introduction') {
+		switch (Dolly.stages['introduction']) {
+			case 0: // ...'
+				Dolly.block_interaction(true)
+				await Dolly.speech_set('...!')
+				await new Promise(r => setTimeout(r, 1000))
+				Dolly.interact(true, true)
+				break;
+			case 1: // Who are you?
+				await Dolly.speech_set('Who are you?')
+				let in_ok = $('<div><span class="input-ok"> >> </span></div>')
+				let in_name = $('<input type="text" size="1" placeholder="---">')
+					.on('focus', () => move.can = false)
+					.on('blur', () => move.can = true)
+					.on('input', () => {
+						if (in_name[0].value.length >= 3 && !in_name[0].nextElementSibling){
+							Dolly.add_custom_element(in_ok)
+							in_ok.on('click', () => {
+								save('visitor', in_name[0].value)
+								Dolly.block_interaction(false)
+								Dolly.interact(true, true)
+							})
+						}
+						else if (in_name[0].value.length < 3) in_ok.remove()
+					})
+				await Dolly.add_custom_element(in_name)
+				break;
+			case 2: // Ahh... Greetings, visitor...
+				await Dolly.speech_set(`Ahh... Greetings, @${get('visitor')}@...`)
+				break;
+			case 3:
+				await Dolly.speech_set('Pardon my surprise, but...')
+				break;
+			case 4: // ...You weren't supposed to be here...
+				Dolly.block_interaction(true)
+				await Dolly.speech_set('...You weren\'t supposed to be here...')
+				await Dolly.dialogue_option_add('Oh, I\'m sorry...', () => {
+					Dolly.stages['introduction'] = 5
+					Dolly.block_interaction(false)
+					Dolly.interact(false)
+				})
+				break
+			case 5:
+				await Dolly.speech_set('Oh, no, it\'s fine!')
+				break;
+			case 6:
+				Dolly.block_interaction(false)
+				await Dolly.speech_set('If you\'re here, I\'d imagine he allowed you in')
+				await Dolly.speech_add('...right?')
+				await Dolly.dialogue_option_add('He did', () => {
+					Dolly.stages['introduction'] = 8
+					Dolly.block_interaction(false)
+					Dolly.interact(false)
+				})
+				await Dolly.dialogue_option_add('I think he did...', () => {
+					Dolly.stages['introduction'] = 7
+					Dolly.block_interaction(false)
+					Dolly.interact(false)
+				})
+				await Dolly.dialogue_option_add('...Not really...', () => {
+					Dolly.stages['introduction'] = 11
+					Dolly.block_interaction(false)
+					Dolly.interact(false)
+				})
+				break;
+			case 7:
+				
+				break;
+			// case :
+			// 	break;
 		}
-		//* A
-		// Oh, no, it's fine!
-		else if (Dolly.states.introduction == 6) this.set_speech('Oh, no, it\'s fine!')
-		// If you're here, I'd imagine he allowed you in... || right?
-		//? Dialogue
-		else if (Dolly.states.introduction == 7){
-			this.block_interaction = true
-			this.set_speech('If you\'re here, I\'d imagine he allowed you in', false)
-			await new Promise(r => setTimeout(r, 4500))
-			await new Promise(r => setTimeout(r, delay_options))
-			this.add_speech('.', false)
-			await new Promise(r => setTimeout(r, delay_options))
-			this.add_speech('.', false)
-			await new Promise(r => setTimeout(r, delay_options))
-			this.add_speech('.', false)
-			await new Promise(r => setTimeout(r, delay_options))
-			this.add_speech(' right?', false)
-			await this.add_dialogueOption('He did, yes!', function(){
-				Dolly.states.introduction = 12
-				Dolly.block_interaction = false
-				Dolly.interact(false)
-			})
-			await this.add_dialogueOption('I think he did...', function(){
-				Dolly.states.introduction = 12
-				Dolly.block_interaction = false
-				Dolly.interact(false)
-			})
-			await this.add_dialogueOption('Not really...', function(){
-				Dolly.states.introduction = 8
-				Dolly.block_interaction = false
-				Dolly.interact(false)
-			})
-			this.block_interaction = false
-		}
-		//* A-1-N
-		// Oh...
-		else if (Dolly.states.introduction == 8) this.set_speech('Oh...')
-		// ...Then...
-		else if (Dolly.states.introduction == 9) this.set_speech('...Then...')
-		// ...
-		else if (Dolly.states.introduction == 10) this.set_speech('...')
-		// ...Will you please leave? --- 11
-		//? Dialogue
-		else if (Dolly.states.introduction == 11){
-			this.set_speech('...Will you please leave?')
-			await new Promise(r => setTimeout(r, 2500))
-			await this.add_dialogueOption('Yes', fuck_it_up)
-			await this.add_dialogueOption('Yes', fuck_it_up)
-		}
-		//* A-1-Y
-		// kamaoji.joy --- 12
-		else if (Dolly.states.introduction == 12){
-			this.bubble_reset()
-			this.add_element($(`<span>${this.kamaoji.joy}</span>`))
-		}
-		//* -
-		// Well, you see...
-		else if (Dolly.states.introduction == 13) this.set_speech('Well, you see...')
-		// This is a special place in his mind.
-		else if (Dolly.states.introduction == 14) this.set_speech('This is a special place in his mind.')
-		// It may look a bit empty, but that's because...
-		else if (Dolly.states.introduction == 15) this.set_speech('It may look a bit empty, but that\'s because...')
-		// Well, everything is well hidden.
-		else if (Dolly.states.introduction == 16) this.set_speech('Well, everything is well hidden.')
-		//* A
-		// He does tend to be quite careful with how he opens up to people
-		else if (Dolly.states.introduction == 17) this.set_speech('He does tend to be quite careful with how he opens up to people')
-		// Despite his yearning to belong and be understood...
-		else if (Dolly.states.introduction == 18) this.set_speech('Despite his yearning to belong and be understood...')
-		// ... --- 19
-		else if (Dolly.states.introduction == 19) this.set_speech('...')
-		// Oh, but, by all means, do feel free to look around! || kamaoji.joy --- 20 || 21
-		else if (Dolly.states.introduction == 20) this.set_speech('Oh, but, by all means, do feel free to look around!')
-		else if (Dolly.states.introduction == 21){
-			this.bubble_reset()
-			this.add_element($(`<span>${this.kamaoji.joy}</span>`))
-		}
-		//* -
-		// I'm sure you'll come across something, in time
-		else if (Dolly.states.introduction == 22) this.set_speech('I\'m sure you\'ll come across something, in time')
-		// ...Just try to be tidy, will you?
-		else if (Dolly.states.introduction == 23) this.set_speech('...Just try to be tidy, will you?')
-		// Maintaining this place is #more work than it might seem#...
-		else if (Dolly.states.introduction == 24) this.set_speech('Maintaining this place is #more work than it might seem#...')
 	}
 }
 
 // ?-------------- Runtime code --------------- //
-$(document).ready(function(){
+$(function(){
 	log('Ready')
 	move.can = true
 	UpdateVariables()
@@ -611,7 +825,8 @@ function Interact(){
 				min = distance_between(ppos.x, ppos.y, npc.pos.x, npc.pos.y)
 			}
 	})
-	closest.interact()
+	if (closest)
+		closest.interact()
 }
 
 // ?------------ Graphic functions ------------ //

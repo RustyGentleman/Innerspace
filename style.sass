@@ -28,27 +28,49 @@
       opacity: 1
 @keyframes shake
   0%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   10%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   20%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   30%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   40%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   50%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   60%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   70%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   80%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   90%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
   100%
-     transform: translate((random()-0.5)*0.2vmin, (random()-0.5)*0.2vmin)
+   position: relative
+   top: (random()-0.5)*0.3vmin
+   left: (random()-0.5)*0.3vmin
 // ------------------
 // --- Structural ---
 // ------------------
@@ -90,9 +112,9 @@ section
    cursor: pointer
    &:not(:focus), &:not(:hover)
       color: rgb(255 255 255 / 30%)
-   &:focus, &:hover
+   &:focus, &:hover, &[data-selected]
       color: white
-   &:hover
+   &:hover, &[data-selected]
       text-shadow: 0 0 1vmin white
 @mixin center-self()
    margin-left: 50%
@@ -173,12 +195,22 @@ input[type=text]
       border-image-slice: 8
       bottom: 100%
       right: 100%
+   &.skippable
+      background-image: url('assets/key_e.gif')
+      background-repeat: no-repeat
+      background-position: center bottom
+      padding-bottom: 1.5em
+   &.select
+      background-image: url('assets/controls_select.gif')
+      background-repeat: no-repeat
+      background-position: center bottom
+      padding-bottom: 1.5em
    .name
       font-family: 'DePixel Halbfett'
       font-size: 0.7em
       &::after
          content: ':'
-         font-size: 0.7em
+         font-size: 1em
    .visitor
       font-family: 'DePixel Halbfett'
       font-size: 0.8em
@@ -188,23 +220,33 @@ input[type=text]
       font-style: italic
       margin: 1vmin 1vmin 1vmin 1vmin
       display: inline-block
+      &:not(:first-child)
+         margin-top: 0
+      &:not(:last-child)
+         margin-bottom: 0
    .wavy
       display: inline-block
       animation: wave 5s infinite calc(var(--order) * 100ms)
    .fade-in
       opacity: 0
-      animation: fadeIn 100ms forwards calc(var(--order) * 100ms)
+      animation: fadeIn 100ms calc(var(--order) * 100ms) forwards calc(var(--order) * 100ms)
+   .shaky
+      animation: shake 1s linear infinite forwards
    .wavy.fade-in
       animation: wave 5s infinite calc(var(--order) * 100ms), fadeIn 100ms calc(var(--order) * 100ms) forwards
-   .shaky > *
-      animation: wave 5s infinite, shake 1s linear infinite forwards, fadeIn 100ms forwards
+   .shaky.fade-in
+      animation: shake 1s linear infinite forwards, fadeIn 100ms calc(var(--order) * 100ms) forwards
+   .shaky.wavy
+      animation: wave 5s infinite calc(var(--order) * 100ms), shake 1s linear infinite forwards
+   .shaky.wavy.fade-in
+      animation: wave 5s infinite calc(var(--order) * 100ms), shake 1s linear infinite forwards, fadeIn 100ms calc(var(--order) * 100ms) forwards
    .wordspan
       display: inline-block
    .dialogue-option
       display: block
       &::before
          content: ' - '
-      &:hover::before
+      &:hover::before, &[data-selected]::before
          content: ' >> '
    .input-ok
       @include center-self()

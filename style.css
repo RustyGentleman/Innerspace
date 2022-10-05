@@ -63,72 +63,116 @@
 }
 @-webkit-keyframes shake {
   0% {
-    transform: translate(0.0726217855vmin, -0.092397536vmin);
+    position: relative;
+    top: -0.1462522006vmin;
+    left: 0.0480719547vmin;
   }
   10% {
-    transform: translate(0.0593187361vmin, -0.0699460056vmin);
+    position: relative;
+    top: -0.0976599982vmin;
+    left: 0.1021158215vmin;
   }
   20% {
-    transform: translate(0.008767972vmin, -0.0827927415vmin);
+    position: relative;
+    top: 0.1026188197vmin;
+    left: -0.0663538713vmin;
   }
   30% {
-    transform: translate(-0.0695192402vmin, 0.0864187449vmin);
+    position: relative;
+    top: -0.0008275532vmin;
+    left: -0.1382919719vmin;
   }
   40% {
-    transform: translate(0.0018354725vmin, -0.0081681466vmin);
+    position: relative;
+    top: -0.1303941107vmin;
+    left: -0.1132720462vmin;
   }
   50% {
-    transform: translate(0.0856248642vmin, 0.0948035569vmin);
+    position: relative;
+    top: -0.1047954025vmin;
+    left: 0.1492248336vmin;
   }
   60% {
-    transform: translate(-0.071539922vmin, -0.0876760286vmin);
+    position: relative;
+    top: 0.0583431747vmin;
+    left: 0.1085312094vmin;
   }
   70% {
-    transform: translate(0.0562377673vmin, -0.0306415661vmin);
+    position: relative;
+    top: 0.0182618696vmin;
+    left: 0.1323690708vmin;
   }
   80% {
-    transform: translate(0.033788972vmin, 0.0796654245vmin);
+    position: relative;
+    top: -0.0163374716vmin;
+    left: 0.0901784529vmin;
   }
   90% {
-    transform: translate(0.0069650119vmin, -0.069410794vmin);
+    position: relative;
+    top: -0.0890533253vmin;
+    left: -0.0181268144vmin;
   }
   100% {
-    transform: translate(-0.0605395409vmin, -0.0741922199vmin);
+    position: relative;
+    top: 0.11812744vmin;
+    left: -0.0286707418vmin;
   }
 }
 @keyframes shake {
   0% {
-    transform: translate(0.0726217855vmin, -0.092397536vmin);
+    position: relative;
+    top: -0.1462522006vmin;
+    left: 0.0480719547vmin;
   }
   10% {
-    transform: translate(0.0593187361vmin, -0.0699460056vmin);
+    position: relative;
+    top: -0.0976599982vmin;
+    left: 0.1021158215vmin;
   }
   20% {
-    transform: translate(0.008767972vmin, -0.0827927415vmin);
+    position: relative;
+    top: 0.1026188197vmin;
+    left: -0.0663538713vmin;
   }
   30% {
-    transform: translate(-0.0695192402vmin, 0.0864187449vmin);
+    position: relative;
+    top: -0.0008275532vmin;
+    left: -0.1382919719vmin;
   }
   40% {
-    transform: translate(0.0018354725vmin, -0.0081681466vmin);
+    position: relative;
+    top: -0.1303941107vmin;
+    left: -0.1132720462vmin;
   }
   50% {
-    transform: translate(0.0856248642vmin, 0.0948035569vmin);
+    position: relative;
+    top: -0.1047954025vmin;
+    left: 0.1492248336vmin;
   }
   60% {
-    transform: translate(-0.071539922vmin, -0.0876760286vmin);
+    position: relative;
+    top: 0.0583431747vmin;
+    left: 0.1085312094vmin;
   }
   70% {
-    transform: translate(0.0562377673vmin, -0.0306415661vmin);
+    position: relative;
+    top: 0.0182618696vmin;
+    left: 0.1323690708vmin;
   }
   80% {
-    transform: translate(0.033788972vmin, 0.0796654245vmin);
+    position: relative;
+    top: -0.0163374716vmin;
+    left: 0.0901784529vmin;
   }
   90% {
-    transform: translate(0.0069650119vmin, -0.069410794vmin);
+    position: relative;
+    top: -0.0890533253vmin;
+    left: -0.0181268144vmin;
   }
   100% {
-    transform: translate(-0.0605395409vmin, -0.0741922199vmin);
+    position: relative;
+    top: 0.11812744vmin;
+    left: -0.0286707418vmin;
   }
 }
 * {
@@ -175,10 +219,10 @@ input, button, .dialogue-option, .input-ok {
 input:not(:focus), input:not(:hover), button:not(:focus), button:not(:hover), .dialogue-option:not(:focus), .dialogue-option:not(:hover), .input-ok:not(:focus), .input-ok:not(:hover) {
   color: rgba(255, 255, 255, 0.3);
 }
-input:focus, input:hover, button:focus, button:hover, .dialogue-option:focus, .dialogue-option:hover, .input-ok:focus, .input-ok:hover {
+input:focus, input:hover, input[data-selected], button:focus, button:hover, button[data-selected], .dialogue-option:focus, .dialogue-option:hover, .dialogue-option[data-selected], .input-ok:focus, .input-ok:hover, .input-ok[data-selected] {
   color: white;
 }
-input:hover, button:hover, .dialogue-option:hover, .input-ok:hover {
+input:hover, input[data-selected], button:hover, button[data-selected], .dialogue-option:hover, .dialogue-option[data-selected], .input-ok:hover, .input-ok[data-selected] {
   text-shadow: 0 0 1vmin white;
 }
 
@@ -268,13 +312,25 @@ input[type=text] {
   bottom: 100%;
   right: 100%;
 }
+.bubble.skippable {
+  background-image: url("assets/key_e.gif");
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  padding-bottom: 1.5em;
+}
+.bubble.select {
+  background-image: url("assets/controls_select.gif");
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  padding-bottom: 1.5em;
+}
 .bubble .name {
   font-family: "DePixel Halbfett";
   font-size: 0.7em;
 }
 .bubble .name::after {
   content: ":";
-  font-size: 0.7em;
+  font-size: 1em;
 }
 .bubble .visitor {
   font-family: "DePixel Halbfett";
@@ -287,6 +343,12 @@ input[type=text] {
   margin: 1vmin 1vmin 1vmin 1vmin;
   display: inline-block;
 }
+.bubble .speech:not(:first-child) {
+  margin-top: 0;
+}
+.bubble .speech:not(:last-child) {
+  margin-bottom: 0;
+}
 .bubble .wavy {
   display: inline-block;
   -webkit-animation: wave 5s infinite calc(var(--order) * 100ms);
@@ -294,16 +356,28 @@ input[type=text] {
 }
 .bubble .fade-in {
   opacity: 0;
-  -webkit-animation: fadeIn 100ms forwards calc(var(--order) * 100ms);
-          animation: fadeIn 100ms forwards calc(var(--order) * 100ms);
+  -webkit-animation: fadeIn 100ms calc(var(--order) * 100ms) forwards calc(var(--order) * 100ms);
+          animation: fadeIn 100ms calc(var(--order) * 100ms) forwards calc(var(--order) * 100ms);
+}
+.bubble .shaky {
+  -webkit-animation: shake 1s linear infinite forwards;
+          animation: shake 1s linear infinite forwards;
 }
 .bubble .wavy.fade-in {
   -webkit-animation: wave 5s infinite calc(var(--order) * 100ms), fadeIn 100ms calc(var(--order) * 100ms) forwards;
           animation: wave 5s infinite calc(var(--order) * 100ms), fadeIn 100ms calc(var(--order) * 100ms) forwards;
 }
-.bubble .shaky > * {
-  -webkit-animation: wave 5s infinite, shake 1s linear infinite forwards, fadeIn 100ms forwards;
-          animation: wave 5s infinite, shake 1s linear infinite forwards, fadeIn 100ms forwards;
+.bubble .shaky.fade-in {
+  -webkit-animation: shake 1s linear infinite forwards, fadeIn 100ms calc(var(--order) * 100ms) forwards;
+          animation: shake 1s linear infinite forwards, fadeIn 100ms calc(var(--order) * 100ms) forwards;
+}
+.bubble .shaky.wavy {
+  -webkit-animation: wave 5s infinite calc(var(--order) * 100ms), shake 1s linear infinite forwards;
+          animation: wave 5s infinite calc(var(--order) * 100ms), shake 1s linear infinite forwards;
+}
+.bubble .shaky.wavy.fade-in {
+  -webkit-animation: wave 5s infinite calc(var(--order) * 100ms), shake 1s linear infinite forwards, fadeIn 100ms calc(var(--order) * 100ms) forwards;
+          animation: wave 5s infinite calc(var(--order) * 100ms), shake 1s linear infinite forwards, fadeIn 100ms calc(var(--order) * 100ms) forwards;
 }
 .bubble .wordspan {
   display: inline-block;
@@ -314,7 +388,7 @@ input[type=text] {
 .bubble .dialogue-option::before {
   content: " - ";
 }
-.bubble .dialogue-option:hover::before {
+.bubble .dialogue-option:hover::before, .bubble .dialogue-option[data-selected]::before {
   content: " >> ";
 }
 .bubble .input-ok {
